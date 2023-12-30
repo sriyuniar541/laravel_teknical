@@ -10,6 +10,7 @@ use App\Models\Sales_details;
 use App\Models\Sales;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use PDF;
 
 class ProductsController extends Controller
@@ -43,62 +44,62 @@ class ProductsController extends Controller
 
     public function store(Request $request)
     {
-        
-        // menambah data ke tabel inventory
         $validatedData = $request->validate([
-            'code'  => 'required|unique:inventories,code',
-            'name'  => 'required',
-            'price' => 'required|numeric',
-            'stock' => 'required'
-        ], [
-            'code.required'  => 'Code wajib diisi',
-            'code.unique'    => 'Code sudah pernah digunakan',
-            'name.required'  => 'Nama wajib diisi',
-            'price.required' => 'Harga wajib diisi',
-            'price.numeric'  => 'Harga harus berupa angka',
-            'stock.required' => 'Stok wajib diisi'
+            'inputs.*.code'  => 'required|unique:inventories,code',
+            'inputs.*.name'  => 'required',
+            'inputs.*.price' => 'required|numeric',
+            'inputs.*.stock' => 'required'
+        ], 
+        [
+            'inputs.*.code.required'  => 'Code wajib diisi',
+            'inputs.*.code.unique'    => 'Code sudah pernah digunakan',
+            'inputs.*.name.required'  => 'Nama wajib diisi',
+            'inputs.*.price.required' => 'Harga wajib diisi',
+            'inputs.*.price.numeric'  => 'Harga harus berupa angka',
+            'inputs.*.stock.required' => 'Stok wajib diisi'
         ]);
-        
-            
-        $data_inventory = [
-            'code'  =>  $request->code,
-            'name'  =>  $request->name,
-            'price' =>  $request->price,
-            'stock' =>  $request->stock
-        ];
 
-       $inventory = Inventories::create($data_inventory);
+        $user_id = Auth::id();
+        $get_user_sales =  Sales::where('user_id', $user_id)->first();
 
-       $user_id = Auth::id();
-   
-       $get_user_sales =  Sales::where('user_id', $user_id)->first();
-
-       if(!$get_user_sales) {
-
+        if (!$get_user_sales) {
             $request->session()->flash('error', 'Seller tidak terdaftar, silahkan registrasi dulu');
+        } 
+        else {
+            try {
+               
+                DB::beginTransaction();
 
-       } else {
+                foreach ($request->inputs as $key => $value) {
+                    $inventory = Inventories::create($value);
 
-          $data_sales_detail = [
+                    $data_sales_detail = [
+                        'sales_id'      => $get_user_sales->id,
+                        'inventory_id'  => $inventory->id,
+                        'qty'           => $value['stock'],
+                        'price'         => $value['price']
+                    ];
 
-            'sales_id'  =>  $get_user_sales->id,
-            'inventory_id'  =>  $inventory->id,
-            'qty' =>  $request->stock,
-            'price' =>  $request->price
+                    Sales_details::create($data_sales_detail);
+                }
 
-        ];
+                DB::commit();
 
-        // menambah data ke tabel sales_detail
-        Sales_details::create($data_sales_detail);
+                $request->session()->flash('success', 'Data berhasil disimpan');
 
-       }   
+            } 
+            catch (\Exception $e) {
+              
+                DB::rollBack();
 
+                $request->session()->flash('error', 'Terjadi kesalahan, data gagal disimpan');
+            }
+        }
 
-        $request->session()->flash('success', 'Tambah produk berhasil');
-
-        return redirect ('/product/addProduct');
+        return redirect()->back();
 
     }
+
 
 
     public function update(Request $request, $id)
@@ -134,6 +135,7 @@ class ProductsController extends Controller
 
     public function update_stock(Request $request, $id)
     {
+
         $update_status = [
             'status_bayar'  =>  1 
         ];
@@ -151,6 +153,30 @@ class ProductsController extends Controller
         $request->session()->flash('success', 'Pembayaran berhasil');
 
         return redirect ('/purchases');
+
+    }
+
+    // role purchases
+    public function update_stock_purc(Request $request, $id)
+    {
+
+        $update_status = [
+            'status_bayar'  =>  1 
+        ];
+
+        Purchases_details::where('id', $request->id)->update($update_status);
+
+
+        $update_stock = [
+            'stock'  => ( $request->stock) - ($request->qty )
+        ];
+
+
+        Inventories::where('id', $request->inventory_id)->update($update_stock);
+
+        $request->session()->flash('success', 'Pembayaran berhasil');
+
+        return redirect ('/purchases/purc/get');
 
     }
 
@@ -174,60 +200,59 @@ class ProductsController extends Controller
 
     public function store_sal(Request $request)
     {
-        
-        // menambah data ke tabel inventory
         $validatedData = $request->validate([
-            'code'  => 'required|unique:inventories,code',
-            'name'  => 'required',
-            'price' => 'required|numeric',
-            'stock' => 'required'
-        ], [
-            'code.required'  => 'Code wajib diisi',
-            'code.unique'    => 'Code sudah pernah digunakan',
-            'name.required'  => 'Nama wajib diisi',
-            'price.required' => 'Harga wajib diisi',
-            'price.numeric'  => 'Harga harus berupa angka',
-            'stock.required' => 'Stok wajib diisi'
+            'inputs.*.code'  => 'required|unique:inventories,code',
+            'inputs.*.name'  => 'required',
+            'inputs.*.price' => 'required|numeric',
+            'inputs.*.stock' => 'required'
+        ], 
+        [
+            'inputs.*.code.required'  => 'Code wajib diisi',
+            'inputs.*.code.unique'    => 'Code sudah pernah digunakan',
+            'inputs.*.name.required'  => 'Nama wajib diisi',
+            'inputs.*.price.required' => 'Harga wajib diisi',
+            'inputs.*.price.numeric'  => 'Harga harus berupa angka',
+            'inputs.*.stock.required' => 'Stok wajib diisi'
         ]);
-        
-            
-        $data_inventory = [
-            'code'  =>  $request->code,
-            'name'  =>  $request->name,
-            'price' =>  $request->price,
-            'stock' =>  $request->stock
-        ];
 
-       $inventory = Inventories::create($data_inventory);
+        $user_id = Auth::id();
+        $get_user_sales =  Sales::where('user_id', $user_id)->first();
 
-       $user_id = Auth::id();
-   
-       $get_user_sales =  Sales::where('user_id', $user_id)->first();
-
-       if(!$get_user_sales) {
-
+        if (!$get_user_sales) {
             $request->session()->flash('error', 'Seller tidak terdaftar, silahkan registrasi dulu');
+        } 
+        else {
+            try {
+               
+                DB::beginTransaction();
 
-       } else {
+                foreach ($request->inputs as $key => $value) {
+                    $inventory = Inventories::create($value);
 
-          $data_sales_detail = [
+                    $data_sales_detail = [
+                        'sales_id'      => $get_user_sales->id,
+                        'inventory_id'  => $inventory->id,
+                        'qty'           => $value['stock'],
+                        'price'         => $value['price']
+                    ];
 
-            'sales_id'  =>  $get_user_sales->id,
-            'inventory_id'  =>  $inventory->id,
-            'qty' =>  $request->stock,
-            'price' =>  $request->price
+                    Sales_details::create($data_sales_detail);
+                }
 
-        ];
+                DB::commit();
 
-        // menambah data ke tabel sales_detail
-        Sales_details::create($data_sales_detail);
+                $request->session()->flash('success', 'Data berhasil disimpan');
 
-       }   
+            } 
+            catch (\Exception $e) {
+              
+                DB::rollBack();
 
+                $request->session()->flash('error', 'Terjadi kesalahan, data gagal disimpan');
+            }
+        }
 
-        $request->session()->flash('success', 'Tambah produk berhasil');
-
-        return redirect ('/product/sal/addProduct');
+        return redirect()->back();
 
     }
 

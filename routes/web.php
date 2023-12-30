@@ -18,15 +18,11 @@ use App\Http\Controllers\PurchasesController;
 
 
 
-
-
-
-
-// _______________dashboar____________________FIX
+// _______________dashboar____________________
 Route::get('/', [ ProductsController::class, 'index'])->middleware(['auth']);
 
 
-// _______________user________________________FIX
+// _______________user________________________
 Route::get('/user/register', [ UserController::class, 'index']);
 Route::post('/user/register', [ UserController::class, 'register']);
 Route::get('/user/login', [ UserController::class, 'viewLogin']);
@@ -35,19 +31,22 @@ Route::get('/user/logout', [ UserController::class, 'logout']);
 Route::get('/user/profile', [ UserController::class, 'profile'])->middleware('auth');
 
 
-// _______________role Manager___________________FIX
+// _______________role Manager___________________
 Route::get('/sales/viewSales', [ SalesController::class, 'viewSales'])->middleware('manager');
 Route::get('/purchases/viewPurchases', [ PurchasesController::class, 'viewPurchases'])->middleware('manager');
 
 
-// _______________role Purchase__________________FIX
+// _______________role Purchase__________________
 Route::get('/purchases/purc/get', [ PurchasesController::class, 'getPurchases'])->middleware('purchase');
 Route::delete('/purchases/purc/{id}', [ PurchasesController::class, 'destroy_purc'])->middleware('purchase');
 Route::put('/purchases/purc/{id}', [ PurchasesController::class, 'update_purc'])->middleware('purchase');
 
+// update bayar dan stock
+Route::put('/product/purc/stock/{id}', [ ProductsController::class, 'update_stock_purc'])->middleware('purchase');
 
 
-// _______________role Super admin_______________FIX
+
+// _______________role Super admin_______________
 
 // sales
     Route::post('/sales', [ SalesController::class, 'store'])->middleware('superAdmin');
@@ -71,9 +70,7 @@ Route::put('/purchases/purc/{id}', [ PurchasesController::class, 'update_purc'])
     
 
 
-
 // _______________role sales_____________________
-// Route::get('/sales/sal/get', [ SalesController::class, 'getSales'])->middleware('sales');
     Route::get('/product/sal/addProduct', [ ProductsController::class, 'create_sal'])->middleware('sales');
     Route::post('/product/sal', [ ProductsController::class, 'store_sal'])->middleware('sales');
     Route::delete('/product/sal/{id}', [ ProductsController::class, 'destroy_sal'])->middleware('sales');
@@ -81,12 +78,7 @@ Route::put('/purchases/purc/{id}', [ PurchasesController::class, 'update_purc'])
     Route::put('/product/sal/stock/{id}', [ ProductsController::class, 'update_stock_sal'])->middleware('sales');
 
 
-
-
-
-
-
-// _______________export ________________________FIX
+// _______________export ________________________
     // sales
     Route::get('/sales/exportExcel', [ SalesController::class, 'exportExcel'])->name('exportSalesExcel');
     Route::get('/sales/exportPdf', [ SalesController::class, 'exportPdf'])->name('exportSalesPdf');

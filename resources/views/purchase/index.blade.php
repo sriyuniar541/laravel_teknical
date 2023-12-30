@@ -33,7 +33,7 @@
                     @if ($item->status_bayar == 0 && $item->inventory->stock > 0)
 
                         {{-- update stock --}}
-                        <form action="{{ url('/product/stock/'.$item->id) }}" method="POST" enctype="multipart/form-data">
+                        <form action="{{ url('/product/purc/stock/'.$item->id) }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             @method('PUT')
                             <button class="btn btn-info text-white" type="submit">Bayar</button>
